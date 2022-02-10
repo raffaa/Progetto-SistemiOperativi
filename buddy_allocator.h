@@ -6,8 +6,10 @@
 typedef struct  {
   int num_levels;
   char* memory; // the memory area to be managed
+  int mem_size;
   int min_bucket_size; // the minimum page of RAM that can be returned
   int* bitmap;
+  int bitmap_size;
 } BuddyAllocator;
 
 
@@ -19,8 +21,10 @@ int BuddyAllocator_calcSize(int num_levels);
 void BuddyAllocator_init(BuddyAllocator* alloc,
                          int num_levels,
                          char* memory,
+                         int mem_size
                          int min_bucket_size
-                         int* bitmap;);
+                         int* bitmap
+                         int bitmap_size);
 
 // returns (allocates) a buddy index at a given level.
 // 0 id no memory available
