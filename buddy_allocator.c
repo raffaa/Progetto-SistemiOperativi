@@ -25,14 +25,6 @@ int startIdx(int idx){
 }
 
 
-// computes the size in bytes for the allocator
-int BuddyAllocator_calcSize(int num_levels) {
-  int buddies=1<<(num_levels+1); // maximum number of allocations, used to determine the max buddies
-  int alloc_size=sizeof(int)*buddies+sizeof(int); //one more byte to store additional inf about the bitmap
-  return alloc_size;
-}
-
-
 void BuddyAllocator_init(BuddyAllocator* alloc,
                          int num_levels,
                          char* memory, // allocator buffer
@@ -40,27 +32,28 @@ void BuddyAllocator_init(BuddyAllocator* alloc,
                          int min_bucket_size,
                          int* bitmap, // bitmap buffer
                          int bitmap_size) {
+  
+  assert ("Minimum bucket size too small!" && min_bucket_size<8);
+  assert ("Number of levels bigger than maximum number of levels allowed!" && num_levels<MAX_LEVELS);
+  
+  int buddies=1<<(num_levels+1); // maximum number of allocations, used to size the bitmap
+  assert ("Not enough memory fo the bitmap!" && bitmap_size >= BitMap_getBytes(buddies));
+
   // initializing fiels of the struct
   alloc->num_levels=num_levels;
   alloc->memory=memory;
   alloc->mem_size=mem_size;
   alloc->min_bucket_size=min_bucket_size;
-  
-  assert ("Number of levels bigger than maximum number of levels allowed!" && num_levels<MAX_LEVELS);
-
-  int buddies=1<<(num_levels+1); // maximum number of allocations, used to size the bitmap
-  
-  if (bitmap_size >= BitMap_getBytes(buddies)) 
-	printf("Not enough memory fo the bitmap!");
 
   printf("BUDDY INITIALIZING\n");
   printf("\tlevels: %d", num_levels);
   printf("\tmax list entries %d bytes\n", buddies);
   printf("\tbucket size:%d\n", min_bucket_size);
-  printf("\tmanaged memory %d bytes\n", (1<<num_levels)*min_bucket_size);
+  printf("\tmanaged memory %d bytes\n", mem_size); //(1<<num_levels)*min_bucket_size
   
   alloc->bitmap_size=bitmap_size;
-  BitMap_init(alloc->bitmap, bitmap_size, alloc->memory);
+  BitMap_init(alloc->bitmap, bitmap_size, memory);
+  printf("Bitmap initialized successfully!");
 }
 
 //reverse loop to find smallest buddy
@@ -126,6 +119,7 @@ void BuddyAllocator_releaseBuddy(BuddyAllocator* alloc, int idx){
   printf("merge %d\n", levelIdx(idx));
   // set children status
   BitMap_setBit(alloc->bitmap, idx, 0);
+  BitMap_setBit(alloc->bitmap, buddyIdx(idx), 0);
   
   //2. we release the parent
   BuddyAllocator_releaseBuddy(alloc, parentIdx(idx));
@@ -139,13 +133,11 @@ void* BuddyAllocator_malloc(BuddyAllocator* alloc, int size) {
   
   // we determine the level of the page
   int level=floor(log2(mem_size/(size+8))); // +8 of bookkeping
-
   // if the level is too small, we pad it to max
   if (level>alloc->num_levels)
     level=alloc->num_levels;
 
-  printf("requested: %d bytes, level %d \n",
-         size, level);
+  printf("requested: %d bytes, level %d \n", size, level);
   
   // we get a buddy of that size;
   int buddyIdx=BuddyAllocator_getBuddy(alloc, level);
@@ -153,20 +145,25 @@ void* BuddyAllocator_malloc(BuddyAllocator* alloc, int size) {
     return NULL;
 
   // we write in the memory region managed the buddy address
-  char* target=alloc->memory;
+  uint8_t* target=alloc->memory;
   ((int*)target)[0]=buddyIdx; // bookkeeping
+  
+  printf("Bitmap allocated successfully!");
    
-  return (void*)(target+sizeof(int));
+  return (void*)(target + sizeof(int));
 }
 //releases allocated memory
 void BuddyAllocator_free(BuddyAllocator* alloc, void* mem) {
-  printf("freeing %p", mem);
+  printf("Freeing %p\n", mem);
+  
+  assert("Cannot free NULL memory area" && mem);
+  
   // we retrieve the buddy from the system
   mem=mem-8;
   int* mem_ptr=(int*) mem;
-  int buddyIdx=*mem_ptr;
-  // sanity check;
-  //assert(alloc->memory==mem_ptr);
-  BuddyAllocator_releaseBuddy(alloc, buddyIdx);
+  int buddy_to_free=*mem_ptr;
+
+  BuddyAllocator_releaseBuddy(alloc, buddy_to_free);
   
+  printf("Bitmap freed successfully!");
 }
