@@ -7,6 +7,7 @@ OBJS=bit_map.o\
 
 HEADERS=bit_map.h buddy_allocator.h
 
+LIBS=libbuddy.a
 
 BINS=buddy_test buddy_allocator_test
 
@@ -18,6 +19,9 @@ all:	$(LIBS) $(BINS)
 %.o:	%.c $(HEADERS)
 	$(CC) $(CCOPTS) -c -o $@  $<
 
+libbuddy.a: $(OBJS) 
+	$(AR) -rcs $@ $^
+	$(RM) $(OBJS)
 
 buddy_test: buddy_test.o $(LIBS)
 	$(CC) $(CCOPTS) -o $@ $^ -lm
