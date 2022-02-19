@@ -40,7 +40,7 @@ void BuddyAllocator_init(BuddyAllocator* alloc,
                          char* memory, // allocator buffer
                          int mem_size,
                          int min_bucket_size,
-                         int* bitmap, // bitmap buffer
+                         char* bitmap, // bitmap buffer
                          int bitmap_size) {
   
   assert ("Minimum bucket size too small!" && min_bucket_size<8);
@@ -61,8 +61,8 @@ void BuddyAllocator_init(BuddyAllocator* alloc,
   printf("\tbucket size:%d\n", min_bucket_size);
   printf("\tmanaged memory %d bytes\n", mem_size); //(1<<num_levels)*min_bucket_size
   
-  alloc->bitmap_size=bitmap_size;
-  BitMap_init(alloc->bitmap, bitmap_size, memory);
+  //alloc->bitmap_size=bitmap_size;
+  BitMap_init(alloc->bitmap, buddies, memory);
   printf("Bitmap initialized successfully!");
 }
 
