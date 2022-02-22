@@ -18,7 +18,7 @@ int BuddyAllocator_calcSize(int num_levels);
 void BuddyAllocator_init(BuddyAllocator* alloc,
                          int num_levels,
                          char* memory,
-                         int mem_size,
+                         //int mem_size,
                          uint8_t *buffer, // to store the bitmap
                          int buf_size,
                          int min_bucket_size);
@@ -37,4 +37,4 @@ void* BuddyAllocator_malloc(BuddyAllocator* alloc, int size);
 void BuddyAllocator_free(BuddyAllocator* alloc, void* mem);
 
 //aux function to get the index of the smallest buddy available
-int BuddyAllocator_minBuddy(BuddyAllocator* alloc);
+int BuddyAllocator_minBuddy(BuddyAllocator* alloc, int num_levels);

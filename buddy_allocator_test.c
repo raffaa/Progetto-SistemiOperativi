@@ -11,7 +11,7 @@ char memory[MEMORY_SIZE];
 
 BuddyAllocator alloc;
 int main(int argc, char** argv) {
-
+/*
   //1 we see if we have enough memory for the buffers
   int req_size=BuddyAllocator_calcSize(BUDDY_LEVELS);
   printf("size requested for initialization: %d/BUFFER_SIZE\n", req_size);
@@ -33,5 +33,5 @@ int main(int argc, char** argv) {
   BuddyAllocator_free(&alloc, p3);
   void* p5=BuddyAllocator_malloc(&alloc, 100000000);
   printf("%d\n",p5);
- 
+ */
 }
