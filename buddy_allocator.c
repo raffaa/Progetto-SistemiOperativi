@@ -3,9 +3,6 @@
 #include <math.h> // for floor and log2
 #include "buddy_allocator.h"
 
-// these are trivial helpers to support you in case you want
-// to do a bitmap implementation
-
 // level of node idx
 int levelIdx(size_t idx){
   return (int)floor(log2(idx));
@@ -67,37 +64,48 @@ void BuddyAllocator_init(BuddyAllocator* alloc,
   assert ("Not enough memory to handle internal structures!" && buf_size>=BuddyAllocator_calcSize(num_levels));
 
   printf("ALLOCATOR INITIALIZING at address %p\n", memory);
-  printf("\tlevels: %d", num_levels);
+  printf("\tlevels: %d\n", num_levels);
   printf("\tbucket size:%d\n", min_bucket_size);
-  printf("\tmanaged memory %d bytes\n", (1<<num_levels)*min_bucket_size); //mem_size
+  printf("\tmanaged memory: %d bytes\n", (1<<num_levels)*min_bucket_size); //mem_size
   
   int n_bits=1<<(num_levels+1); // maximum number of allocations, used to size the bitmap
   int n_bytes=BitMap_getBytes(n_bits);
-  assert ("Not enough memory fo the bitmap!" && buf_size >= n_bytes);
+  assert ("Not enough memory for the bitmap!" && buf_size >= n_bytes);
   
-  printf("Initializing bitmap...\n");
+  printf("\tInitializing bitmap...\n");
   printf("\tbits: %d\n", n_bits);
   printf("\tsize: %d bytes\n", n_bytes);
   BitMap_init(&alloc->bitmap, n_bits, buffer);
-  printf("Bitmap initialized successfully!\n");
+  printf("\tBitmap initialized successfully!\n");
   
   printf("Allocator initialized successfully!\n");
 }
 
 // recursively sets the "descendants" bits of bit_num in the bitmap
 void BitMap_setBit_children(BitMap* bitmap, int bit_num, int status){	
-  
   if (bit_num < bitmap->num_bits) {
-	BitMap_setBit_children(bitmap, bit_num, status);
-	BitMap_setBit_children(bitmap, buddyIdx(bit_num), status);
+	BitMap_setBit_children(bitmap, bit_num*2+1, status);
+	BitMap_setBit_children(bitmap, bit_num*2+2, status);
   }
 }
 
 // recursively sets the "ancestors" bits of bit_num in the bitmap
 void BitMap_setBit_parents(BitMap* bitmap, int bit_num, int status){
   
-  for (int i=bit_num; i>=0; i=parentIdx(i)) {
-		BitMap_setBit(bitmap, i, status);
+  if (bit_num != 0) BitMap_setBit_parents(bitmap, parentIdx(bit_num), status);
+
+}
+
+// recursive merge
+void Bitmap_merge(BitMap *bitmap, int idx){
+  
+  if (idx == 0) return;
+  
+  if (!BitMap_bit(bitmap, buddyIdx(idx))){
+    printf("\tmerging buddies %d and %d on level %d\n", idx, buddyIdx(idx), levelIdx(idx));
+
+    BitMap_setBit(bitmap, parentIdx(idx), 0);
+    Bitmap_merge(bitmap, parentIdx(idx));
   }
 }
 
@@ -107,17 +115,19 @@ int BuddyAllocator_getBuddy(BuddyAllocator* alloc, int level){
   int idx=0;
   // first and last index of chosen level
   int first_idx = firstIdx(level);
-  int last_idx = firstIdx(level-1)-1;
-  // explore all nodes of that level to find a free spot
-  for (int i=first_idx; i<=last_idx; ++i) {
-	if (!BitMap_bit(&alloc->bitmap, i)) { // if not taken
-	  idx = i;  
+  int last_idx = firstIdx(level+1)-1;
+  
+  // explore all nodes on that level to find a free slot
+  while (first_idx <= last_idx) {
+	if (!BitMap_bit(&alloc->bitmap, first_idx)) { // if not taken
+	  idx = first_idx;  
 	  break;
-	 }   
-  }                                                                       
-     
+	 }  
+	 first_idx++; 
+  }                                                                      
+   
   if (idx==0) {
-    printf("ERROR! No more buddies available.\n");
+    printf("ERROR: No more buddies available.\n");
     return 0;
   }
   
@@ -132,27 +142,26 @@ int BuddyAllocator_getBuddy(BuddyAllocator* alloc, int level){
 
 void BuddyAllocator_releaseBuddy(BuddyAllocator* alloc, int idx){
 
-  printf("Freeing memory at %d\n", idx);
-  assert("ERROR! Double free." && !BitMap_bit(&alloc->bitmap, idx)); // trying to free a block that's already free
+  // trying to free a block that's already free
+  //assert("ERROR: Double free." && !BitMap_bit(&alloc->bitmap, idx)); 
+  if (!BitMap_bit(&alloc->bitmap, idx)) {
+	printf("ERROR: Double free\n" );
+	return;  
+  }
 
-  // set the bit of the buddy to be released (and its children) to 0
+  // clearing the bit of the buddy to be released and its children
   BitMap_setBit(&alloc->bitmap, idx, 0);
   BitMap_setBit_children(&alloc->bitmap, idx, 0);
   
   // merging
-  while (BitMap_bit(&alloc->bitmap, buddyIdx(idx))==0) {
-	 printf("merging buddies %d and %d on level %d\n", idx, buddyIdx(idx), levelIdx(idx));
-
-     // release the parent 
-	 BitMap_setBit(&alloc->bitmap, parentIdx(idx), 0);
-  }
+  Bitmap_merge(&alloc->bitmap, idx);
   
   printf("Block at index %d released succesfully!\n", idx);
   
   return;
 }
 
-//allocates memory
+// allocates memory
 void* BuddyAllocator_malloc(BuddyAllocator* alloc, int size) {
   printf("Allocating requested size of %d bytes...\n", size);
   
@@ -161,11 +170,13 @@ void* BuddyAllocator_malloc(BuddyAllocator* alloc, int size) {
   
   // calculate max mem
   int mem_size=(1<<alloc->num_levels)*alloc->min_bucket_size;
-  assert("Not enough memory available!" && size>mem_size);
+  if (size>mem_size) {
+	printf("ERROR: Not enough memory available\n" );
+	return NULL;  
+  }
   
   // calculate level for page
   int level=floor(log2(mem_size/(size+4))); 
-  assert("Not enough memory available!" && level<0);
   
   // if the allocator does not have enough levels, we pad it to max
   if (level>alloc->num_levels)
@@ -174,7 +185,6 @@ void* BuddyAllocator_malloc(BuddyAllocator* alloc, int size) {
   printf("...looking for a buddy at level %d \n", level);
   
   int block_size=(1<<(alloc->num_levels-level))*alloc->min_bucket_size;
-  assert("Not enough memory available!" && block_size > mem_size);
   printf("... found block of size %d\n", block_size);
   
   // we get a buddy of that size on that level
@@ -190,7 +200,7 @@ void* BuddyAllocator_malloc(BuddyAllocator* alloc, int size) {
   return (void*)(target+4); // to hide bookkeeping info
 }
 
-//releases allocated memory
+// releases allocated memory
 void BuddyAllocator_free(BuddyAllocator* alloc, void* mem) {
   printf("Freeing %p\n", mem);
   

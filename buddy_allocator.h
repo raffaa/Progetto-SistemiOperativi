@@ -29,10 +29,19 @@ int BuddyAllocator_getBuddy(BuddyAllocator* alloc, int level);
 // releases an allocated buddy, performing the necessary joins
 void BuddyAllocator_releaseBuddy(BuddyAllocator* alloc, int idx);
 
-//allocates memory
+// allocates memory
 void* BuddyAllocator_malloc(BuddyAllocator* alloc, int size);
 
-//releases allocated memory
+// releases allocated memory
 void BuddyAllocator_free(BuddyAllocator* alloc, void* mem);
 
-//aux functions
+// aux functions
+
+// recursively sets the "descendants" bits of bit_num in the bitmap
+void BitMap_setBit_children(BitMap* bitmap, int bit_num, int status);
+
+// recursively sets the "ancestors" bits of bit_num in the bitmap
+void BitMap_setBit_parents(BitMap* bitmap, int bit_num, int status);
+
+// recursive merge
+void Bitmap_merge(BitMap *bitmap, int idx);
