@@ -38,10 +38,20 @@ void BitMap_setBit(BitMap* bit_map, int bit_num, int status);
 // inspects the status of the bit bit_num
 int BitMap_bit(const BitMap* bit_map, int bit_num);
 
+/////////////// aux functions /////////////// 
 
 // prints bitmap structure
 // 1=available, 0=unavailable/released
 void BitMap_print(BitMap* bitmap);
+
+// recursively sets the "descendants" bits of bit_num in the bitmap
+void BitMap_setBit_children(BitMap* bitmap, int bit_num, int status);
+
+// recursively sets the "ancestors" bits of bit_num in the bitmap
+void BitMap_setBit_parents(BitMap* bitmap, int bit_num, int status);
+
+// recursive merge
+void Bitmap_merge(BitMap *bitmap, int idx);
 
 // returns 1 if all children of idx are free, 0 otherwise
 int BitMap_check_children(BitMap* bit_map, int idx);

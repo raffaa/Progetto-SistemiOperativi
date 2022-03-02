@@ -53,31 +53,6 @@ void BuddyAllocator_init(BuddyAllocator* alloc,
   printf("Allocator initialized successfully!\n");
 }
 
-// recursively sets the "descendants" bits of bit_num in the bitmap
-void BitMap_setBit_children(BitMap* bitmap, int bit_num, int status){	
-  if (bit_num < bitmap->num_bits) {
-	BitMap_setBit(bitmap, bit_num, status);
-	BitMap_setBit_children(bitmap, bit_num*2+1, status); // left child of bit bit_num
-	BitMap_setBit_children(bitmap, bit_num*2+2, status); // right child of bit bit_num
-  }
-}
-
-// recursively sets the "ancestors" bits of bit_num in the bitmap
-void BitMap_setBit_parents(BitMap* bitmap, int bit_num, int status){
-  BitMap_setBit(bitmap, bit_num, status);
-  if (bit_num != 0) BitMap_setBit_parents(bitmap, parentIdx(bit_num), status);
-}
-
-// recursive merge
-void Bitmap_merge(BitMap *bitmap, int idx){ 
-  if (idx == 0) return;
-  
-  if (!BitMap_bit(bitmap, buddyIdx(idx))){
-    printf("\tmerging buddies %d and %d on level %d\n", idx, buddyIdx(idx), levelIdx(idx));
-    BitMap_setBit(bitmap, parentIdx(idx), 0);
-    Bitmap_merge(bitmap, parentIdx(idx));
-  }
-}
 
 int BuddyAllocator_getBuddy(BuddyAllocator* alloc, int level){
   if (level < 0) return -1;

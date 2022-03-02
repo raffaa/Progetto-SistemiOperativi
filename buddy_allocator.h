@@ -34,15 +34,7 @@ void* BuddyAllocator_malloc(BuddyAllocator* alloc, int size);
 // releases allocated memory
 void BuddyAllocator_free(BuddyAllocator* alloc, void* mem);
 
-// aux functions...
 
-// recursively sets the "descendants" bits of bit_num in the bitmap
-void BitMap_setBit_children(BitMap* bitmap, int bit_num, int status);
 
-// recursively sets the "ancestors" bits of bit_num in the bitmap
-void BitMap_setBit_parents(BitMap* bitmap, int bit_num, int status);
-
-// recursive merge
-void Bitmap_merge(BitMap *bitmap, int idx);
 
 
