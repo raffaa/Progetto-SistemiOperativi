@@ -10,7 +10,6 @@ typedef struct  {
   BitMap bitmap;
 } BuddyAllocator;
 
-
 // computes the size in bytes for the buffer of the allocator
 int BuddyAllocator_calcSize(int num_levels);
 
@@ -23,7 +22,7 @@ void BuddyAllocator_init(BuddyAllocator* alloc,
                          int min_bucket_size);
 
 // returns (allocates) a buddy index at a given level.
-// 0 id no memory available
+// -1 is no memory available
 int BuddyAllocator_getBuddy(BuddyAllocator* alloc, int level);
 
 // releases an allocated buddy, performing the necessary joins
@@ -35,16 +34,15 @@ void* BuddyAllocator_malloc(BuddyAllocator* alloc, int size);
 // releases allocated memory
 void BuddyAllocator_free(BuddyAllocator* alloc, void* mem);
 
-// aux functions
+// aux functions...
 
 // recursively sets the "descendants" bits of bit_num in the bitmap
-//void BitMap_setBit_children(BitMap* bitmap, int bit_num, int status);
+void BitMap_setBit_children(BitMap* bitmap, int bit_num, int status);
 
 // recursively sets the "ancestors" bits of bit_num in the bitmap
 void BitMap_setBit_parents(BitMap* bitmap, int bit_num, int status);
 
 // recursive merge
 void Bitmap_merge(BitMap *bitmap, int idx);
-
 
 
