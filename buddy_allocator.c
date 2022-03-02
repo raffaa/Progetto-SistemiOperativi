@@ -3,35 +3,6 @@
 #include <math.h> // for floor and log2
 #include "buddy_allocator.h"
 
-// N.B. levels start from 0
-// level of node idx
-int levelIdx(size_t idx){
-  return (int)floor(log2(idx+1));
-};
-
-// idx of 1st node of a level i
-int firstIdx(int i){
-  return (1<<i)-1;  /*{2^i}-1*/
-}
-
-// offset of node idx in his level
-// N.B. starts from 0
-int startIdx(int idx){
-  return idx-(firstIdx(levelIdx(idx))); //((idx+1)-(1<<levelIdx(idx)));
-}
-
-// index of the buddy of node idx
-int buddyIdx(int idx){
-  if (idx&0x1){
-    return idx-1;
-  }
-  return idx+1;
-}
-
-// parent of the node idx
-int parentIdx(int idx){
-  return (idx-1)/2;
-}
 
 // computes the size in bytes for the allocator
 int BuddyAllocator_calcSize(int num_levels) {

@@ -8,6 +8,23 @@ typedef struct  {
   int num_bits; 
 } BitMap;
 
+// N.B. levels start from 0
+// level of node idx
+int levelIdx(int idx);
+
+// idx of 1st node of a level i
+int firstIdx(int i);
+
+// offset of node idx in his level
+// N.B. starts from 0
+int startIdx(int idx);
+
+// index of the buddy of node idx
+int buddyIdx(int idx);
+
+// parent of the node idx
+int parentIdx(int idx);
+
 // returns the number of bytes to store bits booleans
 int BitMap_getBytes(int bits);
 
