@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <math.h>
 
-// N.B. levels start from 0
 // level of node idx
+// N.B. levels start from 0
 int levelIdx(int idx){
   return (int)floor(log2(idx+1));
 }
@@ -48,49 +48,58 @@ void BitMap_init(BitMap* bit_map, int num_bits, uint8_t* buffer){
 // sets the bit bit_num in the bitmap
 // status= 0 or 1
 void BitMap_setBit(BitMap* bit_map, int bit_num, int status){
-  // get byte
-  int byte_num=bit_num>>3;
-  assert(byte_num<bit_map->buffer_size);
-  int bit_in_byte=byte_num&0x03;
+  assert(bit_num<bit_map->num_bits);
+  int byte_num=bit_num/8;
+  int bit_in_byte=bit_num%8;
+  uint8_t mask=1<<bit_in_byte;
   if (status) {
-    bit_map->buffer[byte_num] |= (1<<bit_in_byte);
+    bit_map->buffer[byte_num]|=mask;
   } else {
-    bit_map->buffer[byte_num] &= ~(1<<bit_in_byte);
+    bit_map->buffer[byte_num]&=(~mask);
   }
 }
 
 // inspects the status of the bit bit_num
 int BitMap_bit(const BitMap* bit_map, int bit_num){
-  int byte_num=bit_num>>3; 
-  assert(byte_num<bit_map->buffer_size);
-  int bit_in_byte=byte_num&0x03;
-  return (bit_map->buffer[byte_num] & (1<<bit_in_byte))!=0;
-}
-
-void setBit(BitMap* bit_map, int bitIndex) //sets the bit at index bitIndex
-{
-	int intIndex = bitIndex / (sizeof(int)*8);
-	int pos = bitIndex % (sizeof(int)*8);
-	unsigned int flag = 1;
-	flag = flag << pos;
-	bit_map->buffer[intIndex] = bit_map->buffer[intIndex] | flag;
+  assert(bit_num<bit_map->num_bits);
+  int byte_num=bit_num/8;
+  int bit_in_byte=bit_num%8;
+  return (bit_map->buffer[byte_num]&(1<<bit_in_byte))>0;
 }
 
 // prints bitmap structure
-// 0: at list one of the children is free  
-// 1: is taken (or both children are taken)
-void BitMap_print(BitMap* bitmap) {
-	int num_bits = bitmap->num_bits;
+// 1=available, 0=unavailable/released
+void BitMap_print(BitMap* bit_map) {
+	int num_bits = bit_map->num_bits;
 	int currentLevel = 1;
     int maxPerLevel = 1<<currentLevel;
+    printf("Level %d:  ", currentLevel-1);
 	for(int i = 0; i < num_bits-1; i++) {
-        
         if(i == maxPerLevel-1) {
             printf("\n");
             currentLevel++;
             maxPerLevel = 1<<currentLevel;
+            printf("Level %d:  ", currentLevel-1);
         }
-        printf(" %d", BitMap_bit(bitmap, i));
+        printf(" %d", BitMap_bit(bit_map, i));
     }
     printf("\n");
+}
+
+int leftChild(int idx) { return idx*2+1; }
+int rightChild(int idx) { return idx*2+2; }
+
+// returns 1 if all children of idx are free, 0 otherwise
+int BitMap_check_children(BitMap* bit_map, int idx) {
+  if (rightChild(idx) < bit_map->num_bits) {
+	// check that both children are free	
+    if (!(BitMap_bit(bit_map, leftChild(idx)) || BitMap_bit(bit_map, rightChild(idx)))) {
+      BitMap_check_children(bit_map, leftChild(idx));
+      BitMap_check_children(bit_map, rightChild(idx));
+    }
+    // at least one child is taken
+    else return 0;
+  } 
+  //all children are free
+  return 1;
 }

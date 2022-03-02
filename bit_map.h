@@ -38,7 +38,10 @@ void BitMap_setBit(BitMap* bit_map, int bit_num, int status);
 // inspects the status of the bit bit_num
 int BitMap_bit(const BitMap* bit_map, int bit_num);
 
+
 // prints bitmap structure
-// 0: at list one of the children is free  
-// 1: is taken (or both children are taken)
+// 1=available, 0=unavailable/released
 void BitMap_print(BitMap* bitmap);
+
+// returns 1 if all children of idx are free, 0 otherwise
+int BitMap_check_children(BitMap* bit_map, int idx);
