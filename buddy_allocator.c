@@ -85,21 +85,13 @@ int BuddyAllocator_getBuddy(BuddyAllocator* alloc, int level){
 }
 
 void BuddyAllocator_releaseBuddy(BuddyAllocator* alloc, int idx){
+  if (idx == 0) return;
   
-  // trying to free a block that's already free
-  if (!BitMap_bit(&alloc->bitmap, idx)) {
-	printf("ERROR: Double free\n" );
-	return;  
+  if (!BitMap_bit(&alloc->bitmap, buddyIdx(idx))){
+    printf("\tmerging buddies %d and %d on level %d\n", idx, buddyIdx(idx), levelIdx(idx));
+    BitMap_setBit(&alloc->bitmap, parentIdx(idx), 0);
+    BuddyAllocator_releaseBuddy(alloc, parentIdx(idx));
   }
-
-  // 1. clearing the bit of the buddy to be released and its children
-  BitMap_setBit(&alloc->bitmap, idx, 0);
-  BitMap_setBit_children(&alloc->bitmap, idx, 0);
-  
-  // 2. merging
-  Bitmap_merge(&alloc->bitmap, idx);
-  
-  printf("Block at index %d released succesfully!\n", idx);
   
   return;
 }
@@ -165,7 +157,19 @@ void BuddyAllocator_free(BuddyAllocator* alloc, void* mem) {
   
   printf("Releasing buddy %d...\n", buddy_to_free);
   
+  // trying to free a block that's already free
+  if (!BitMap_bit(&alloc->bitmap, buddy_to_free)) {
+	printf("ERROR: Double free\n" );
+	return;  
+  }
+  
+  // 1. clearing the bit of the buddy to be released and its children
+  BitMap_setBit(&alloc->bitmap, buddy_to_free, 0);
+  BitMap_setBit_children(&alloc->bitmap, buddy_to_free, 0);
+  // 2. merging
   BuddyAllocator_releaseBuddy(alloc, buddy_to_free);
+  
+  printf("Block at index %d released succesfully!\n", buddy_to_free);
 }
 
 
