@@ -23,9 +23,9 @@ int startIdx(int idx){
 // index of the buddy of node idx
 int buddyIdx(int idx){
   if (idx&0x1){
-    return idx-1;
+    return idx+1;
   }
-  return idx+1;
+  return idx-1;
 }
 
 // parent of the node idx
@@ -99,17 +99,6 @@ void BitMap_setBit_children(BitMap* bitmap, int bit_num, int status){
 void BitMap_setBit_parents(BitMap* bitmap, int bit_num, int status){
   BitMap_setBit(bitmap, bit_num, status);
   if (bit_num != 0) BitMap_setBit_parents(bitmap, parentIdx(bit_num), status);
-}
-
-// recursive merge
-void Bitmap_merge(BitMap *bitmap, int idx){ 
-  if (idx == 0) return;
-  
-  if (!BitMap_bit(bitmap, buddyIdx(idx))){
-    printf("\tmerging buddies %d and %d on level %d\n", idx, buddyIdx(idx), levelIdx(idx));
-    BitMap_setBit(bitmap, parentIdx(idx), 0);
-    Bitmap_merge(bitmap, parentIdx(idx));
-  }
 }
 
 int leftChild(int idx) { return idx*2+1; }
